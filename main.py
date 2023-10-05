@@ -3,50 +3,37 @@ import random
 
 pygame.init()
 
-
-platform_surfaces = []  # Create a list to store the platform surfaces
+# Original screen size and character size
 screen_size = 800, 600
 character_size = 57, 81
 
-platform_size = 100, 20
-
-num_platforms = 5  # Adjust the number of platforms as needed
-platforms = []
-
-# Initial character position
+# Character and platform initialization
 character_x = screen_size[0] // 2
 character_y = screen_size[1] - character_size[1]
-
-# Character movement variables
 character_x_speed = 0
 character_y_speed = 0
-gravity = 1  # You can adjust the gravity value
-
+gravity = 1
 jump = False
-jump_height = -25  # Adjust for the desired jump height
+jump_height = -25
 
-
-screen = pygame.display.set_mode(screen_size)
-
+# Create the screen with original dimensions
+scaled_screen_size = screen_size
+screen = pygame.display.set_mode(scaled_screen_size)
 pygame.display.set_caption("Fighter")
 
+# Load the background image
 background = pygame.image.load("sprites/background.png")
 background = pygame.transform.scale(background, screen_size)
 
+# Load and scale the character image
 character = pygame.image.load("sprites/idle2.png")
 character_right = pygame.transform.scale(character, character_size)
 character_left = pygame.transform.flip(character_right, flip_x=True, flip_y=False)
 
-# Load and resize the platform image
-platform = pygame.image.load("sprites/tile.png")
-platform = pygame.transform.scale(platform, (platform_size[0], platform_size[1]))
+character_direction = "right"
 
-for platform in platforms:
-    platform_surface = pygame.Surface((platform_size[0], platform_size[1]))
-    platform_surface.blit(platform, (0, 0))  # Blit the platform image onto the platform surface
-    platform_surfaces.append(platform_surface)
-
-character_direction = "right"  # Initially facing right
+# Camera position initialization
+camera_x = 0
 
 running = True
 while running:
@@ -54,7 +41,6 @@ while running:
         if event.type == pygame.QUIT:
             running = False
             
-        # Check for key presses
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_a:
                 character_x_speed = -2
@@ -67,7 +53,6 @@ while running:
                     jump = True
                     character_y_speed = jump_height
 
-        # Check for key releases
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_a or event.key == pygame.K_d:
                 character_x_speed = 0
@@ -76,35 +61,31 @@ while running:
     character_y += character_y_speed
 
     # Character boundaries
-    if character_x < 0:
-        character_x = 0
-    if character_x > screen_size[0] - character_size[0]:
-        character_x = screen_size[0] - character_size[0]
     if character_y > screen_size[1] - character_size[1]:
         character_y = screen_size[1] - character_size[1]
         jump = False
 
-    # Inside the game loop, check for collisions with the platforms
-    for platform in platforms:
-        platform_x, platform_y = platform
-        if (character_y + character_size[1] >= platform_y) and (character_y + character_size[1] <= platform_y + platform_size[1]) and (character_x + character_size[0] >= platform_x) and (character_x <= platform_x + platform_size[0]):
-            character_y = platform_y - character_size[1]
-            jump = False
-
-    # Draw the character and platforms
-    for i, platform in enumerate(platforms):
-        platform_x, platform_y = platform
-        screen.blit(platform_surfaces[i], (platform_x, platform_y))
-        
     # Update character position
     character_x += character_x_speed
-    screen.blit(background, (0, 0))
+
+    # Adjust the camera position to follow the character
+    camera_x = character_x - (screen_size[0] // 2)
+
+    # Calculate the number of times the background should be duplicated
+    background_repeats = camera_x // background.get_width()
+
+    # Draw the duplicated background segments
+    for i in range(background_repeats, background_repeats + 2):
+        screen.blit(background, (i * background.get_width() - camera_x, 0))
+
     # Draw the character
     if character_direction == "right":
-        screen.blit(character_right, (character_x, character_y))
+        screen.blit(character_right, (character_x - camera_x, character_y))
     else:
-        screen.blit(character_left, (character_x, character_y))
+        screen.blit(character_left, (character_x - camera_x, character_y))
+
     pygame.display.update()
+
 
 pygame.quit()
 
